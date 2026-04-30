@@ -10,7 +10,29 @@ The original experiment compared four memory **contents** (Experiential, Synthet
 
 > Was synthetic memory bad because of its **content** (documentation-style, lacking project specificity), or because of its **retrieval method** (flat semantic chunking that strips structure)?
 
-Disentangling these requires a second axis: **retrieval method**. We propose adding the **LLM-Wiki** method (Karpathy gist; cf. [news.hada.io topic 28208](https://news.hada.io/topic?id=28208)) as a contrast to RAG, holding content constant.
+Disentangling these requires a second axis: **retrieval method**. We propose adding the **LLM-Wiki** method ([Karpathy 2026][karpathy]; cf. [news.hada.io topic 28208](https://news.hada.io/topic?id=28208)) as a contrast to RAG, holding content constant.
+
+## Related Work and Positioning
+
+Three lines of work motivate this extension:
+
+**1. Structured retrieval generally beats flat RAG on relational tasks.** Microsoft's GraphRAG ([Edge et al. 2024][graphrag]) builds an entity knowledge graph plus community summaries from a corpus, demonstrating substantial gains over conventional RAG on global sensemaking queries over million-token datasets. LinkedIn's deployed customer-service KG-RAG ([Xu et al. 2024][linkedin]) reports **+77.6% MRR**, **+0.32 BLEU**, and **−28.6% median issue resolution time** in production — the strongest empirical evidence to date that preserving inter-document structure pays off on real workloads.
+
+**2. The advantage is task-dependent, not universal.** [Xiang et al. 2025][whennot] benchmark when graph augmentation actually helps and find GraphRAG **frequently underperforms vanilla RAG** on many real tasks: graph structure helps most for *hierarchical reasoning and contextual summarization*, least for *plain fact retrieval*. This maps directly onto our taskset's four categories (see *Per-Category Predictions* below).
+
+**3. Systematic head-to-head benchmarks exist but use different corpora.** [Han et al. 2025][ragvsgraphrag] provide unified evaluation protocols comparing RAG and GraphRAG on QA and query-focused summarization, finding distinct strengths per paradigm and that hybrid selection strategies win consistently. Our experiment differs by holding *content* constant across conditions (same 20 synthetic / 157 experiential files used in both arms), isolating retrieval-method effect on a *single-agent software-development* workload — a context absent from the existing benchmarks.
+
+### Where this experiment sits in the design space
+
+| Point | Index | Retrieval | Build cost | Examples |
+|-------|-------|-----------|------------|----------|
+| Flat RAG | embedding chunks | vector similarity | embedding compute + DB | original Conditions A–C |
+| GraphRAG | entity KG + community summaries | graph traversal + summary lookup | LLM-driven graph extraction | [Edge et al.][graphrag], [Xu et al.][linkedin] |
+| **LLM-Wiki (this work)** | **markdown pages + `index.md` + `## Related`** | **`Read`/`Glob`/`Grep` + link traversal** | **LLM-curated cross-refs only** | [Karpathy gist][karpathy], Conditions E/F |
+
+LLM-Wiki is the *lightest-weight* point in this design space: no entity extraction, no embeddings, no vector DB, no graph DB. Its cost-of-entry is hours of LLM authoring time, not engineering complexity. This makes it especially attractive for the user's stated pain points (embedding sunk cost, per-search cost, technical complexity).
+
+A future arm could add **Condition G = Microsoft-GraphRAG-on-same-corpus** to span all three points; deferred for scope.
 
 ## Hypothesis
 
@@ -19,6 +41,19 @@ Disentangling these requires a second axis: **retrieval method**. We propose add
 **H2** (weaker): Wiki structure also benefits experiential memory but with smaller marginal gains, because the experiential corpus already contains implicit cross-reference structure from real collaboration.
 
 **H3** (cost): Per-query token usage rises (the agent reads whole pages instead of chunks), but per-corpus setup cost falls to zero (no embeddings). Net cost is workload-dependent.
+
+### Per-Category Predictions
+
+Following [Xiang et al. 2025][whennot] — graph structure helps most for hierarchical reasoning and contextual synthesis, least for plain fact retrieval — we predict the per-category effect of moving from RAG to Wiki on the synthetic corpus:
+
+| Category | RAG (B, observed) | Wiki (E, predicted) | Rationale |
+|----------|:---:|:---:|---|
+| Information Retrieval | 1.4 | small gain (≈2.0–2.5) | Mostly fact lookup; structure helps disambiguation only |
+| Coding Tasks | 3.2 | moderate gain (≈3.8–4.2) | Agent benefits from following related-page links to find idiomatic patterns |
+| Architecture Decisions | 3.4 | **large gain (≈4.3–4.8)** | Hierarchical reasoning across stack layers — exactly where structure pays off |
+| Context-Dependent | 2.6 | **large gain (≈4.0–4.5)** | Cross-reference traversal is the natural fit |
+
+Falsification: if E ≈ B across all four categories, retrieval method does *not* explain the original B<D result, and the content-quality interpretation stands. If E exceeds B in IR but not in Architecture/Context-Dependent, our prediction is wrong in direction and the literature's task-dependence claim doesn't transfer to this workload.
 
 ## Design
 
@@ -131,3 +166,26 @@ The synthetic corpus and wiki are public (CC-BY-4.0). Anyone can reproduce Condi
 4. Scoring with `evaluation/rubric.md`.
 
 Condition F (experiential-wiki) requires the private experiential corpus, available on request per the parent paper's data policy.
+
+## References
+
+- <a id="ref-ragvsgraphrag"></a>**[Han et al. 2025]** Han, H., Ma, L., Wang, Y., Shomer, H., Lei, Y., Qi, Z., Guo, K., Hua, Z., Long, B., Liu, H., Aggarwal, C. C., & Tang, J. (2025). *RAG vs. GraphRAG: A Systematic Evaluation and Key Insights*. arXiv:2502.11371. <https://arxiv.org/abs/2502.11371>
+  *Used here as the methodological model for unified evaluation protocols (preprocessing, retrieval, generation held constant). Our contribution differs by holding content constant and varying retrieval method on a software-development workload.*
+
+- <a id="ref-graphrag"></a>**[Edge et al. 2024]** Edge, D., Trinh, H., Cheng, N., Bradley, J., Chao, A., Mody, A., Truitt, S., Metropolitansky, D., Ness, R. O., & Larson, J. (2024). *From Local to Global: A Graph RAG Approach to Query-Focused Summarization*. arXiv:2404.16130. <https://arxiv.org/abs/2404.16130>
+  *Canonical GraphRAG instantiation: entity KG + community summaries. Our LLM-Wiki sits at a different point in the design space (markdown + cross-refs, no entity extraction).*
+
+- <a id="ref-karpathy"></a>**[Karpathy 2026]** Karpathy, A. *LLM-Wiki pattern* (gist). <https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f>
+  *Direct framing for Conditions E/F. Defines the three-layer architecture (raw sources / wiki / schema) and the ingest–query–lint workflow that `wiki/CLAUDE.md` operationalizes.*
+
+- <a id="ref-linkedin"></a>**[Xu et al. 2024]** Xu, Z., Cruz, M. J., Guevara, M., Wang, T., Deshpande, M., Wang, X., & Li, Z. (2024). *Retrieval-Augmented Generation with Knowledge Graphs for Customer Service Question Answering*. SIGIR 2024. arXiv:2404.17723. doi:10.1145/3626772.3661370. <https://arxiv.org/abs/2404.17723>
+  *Strongest deployed empirical evidence for structured retrieval over flat RAG: +77.6% MRR, +0.32 BLEU, −28.6% median resolution time at LinkedIn. Cited as evidence that retrieval-method gains transfer to production workloads.*
+
+- <a id="ref-whennot"></a>**[Xiang et al. 2025]** Xiang, Z., Wu, C., Zhang, Q., Chen, S., Hong, Z., Huang, X., & Su, J. (2025). *When to use Graphs in RAG: A Comprehensive Analysis for Graph Retrieval-Augmented Generation*. arXiv:2506.05690. <https://arxiv.org/abs/2506.05690>
+  *Provides the task-dependence claim: graph helps for hierarchical reasoning and contextual summarization, not plain fact retrieval. Grounds the per-category predictions table.*
+
+[ragvsgraphrag]: #ref-ragvsgraphrag
+[graphrag]: #ref-graphrag
+[karpathy]: #ref-karpathy
+[linkedin]: #ref-linkedin
+[whennot]: #ref-whennot
