@@ -97,7 +97,7 @@ def judge_one_via_claude_code(
         "--no-session-persistence",
         "--model", model,
         "--output-format", "json",
-        "--allowedTools", "",  # judge needs no tools — pure text in/out
+        "--tools", "",  # strictly disable all tools — judge is pure text in/out
         "--permission-mode", "bypassPermissions",
     ]
     try:

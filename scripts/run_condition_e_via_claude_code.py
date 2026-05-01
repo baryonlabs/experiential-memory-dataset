@@ -73,7 +73,15 @@ def build_claude_cmd(
         "--no-session-persistence",
         "--system-prompt", soul_spec,
         "--add-dir", str(wiki_dir.resolve()),
-        "--allowedTools", "Read,Glob,Grep",
+        # `--tools` is the strict whitelist of *available* tools. The
+        # agent literally cannot see anything else. We deliberately do
+        # NOT use `--allowedTools` here (that flag only auto-approves
+        # permissions for tools that are already available, which under
+        # `--permission-mode bypassPermissions` would still let Bash and
+        # everything else through — contaminating the LLM-Wiki vs RAG
+        # comparison since Bash can replicate Read/Glob/Grep behavior in
+        # ways that are not part of the LLM-Wiki retrieval method).
+        "--tools", "Read,Glob,Grep",
         "--model", model,
         "--output-format", "stream-json",
         "--verbose",
@@ -158,6 +166,8 @@ def run_one_task_via_claude_code(
                             inp.get("path")
                             or inp.get("pattern")
                             or inp.get("file_path")
+                            or inp.get("command")
+                            or inp.get("query")
                             or ""
                         )
                         _progress(started, f"→ {name}({str(detail)[:60]})")
