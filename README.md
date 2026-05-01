@@ -27,6 +27,62 @@ This dataset accompanies a controlled experiment comparing four memory condition
 
 **Key Finding**: Hybrid memory (experiential + synthetic) achieves near-perfect scores (4.95/5.0), outperforming either source alone. Surprisingly, synthetic memory alone performs *worse* than no memory at all (2.65 < 3.30).
 
+---
+
+## v2 연구 확장: RAG vs LLM-Wiki 비교 (진행 중)
+
+> 이 섹션은 원 실험을 확장하는 후속 연구입니다.
+> 작업 브랜치: [`claude/rag-vs-graph-comparison-vAOGf`](https://github.com/baryonlabs/experiential-memory-dataset/tree/claude/rag-vs-graph-comparison-vAOGf)
+> 설계 문서: [`docs/rag-vs-wiki-design.md`](docs/rag-vs-wiki-design.md)
+
+### 동기
+
+원 실험에서 가장 의외였던 결과는 **Synthetic(2.65) < Baseline(3.30)** — 메모리가 *없는 것보다 못함*. 이 결과는 두 가지 해석이 분리되지 않은 채 남아 있습니다:
+
+- (a) **콘텐츠 문제** — synthetic 문서가 실제로 노이즈를 추가한다
+- (b) **검색 방식 문제** — flat RAG의 의미 청킹이 문서 구조를 깎아낸다
+
+검증하려면 *동일 코퍼스를 다른 검색 방식으로 접근*하는 조건이 필요합니다.
+
+### 추가 조건 (E, F)
+
+| Cond | 메모리 콘텐츠 | 검색 방식 | 상태 |
+|------|---------------|-----------|------|
+| E | Synthetic 20 (wiki 변환) | LLM-Wiki | PoC 완료 (3/20), 나머지 변환 대기 |
+| F | Experiential 157 (wiki 변환) | LLM-Wiki | private 코퍼스 작업 예정 |
+
+각 변환 페이지는 front-matter에 `source: synthetic-memory/<file>.md` 를 명시해 **콘텐츠 동일성**을 추적합니다 — 평가 전 fidelity lint로 검증해야 B vs E, A vs F 비교가 오염되지 않습니다.
+
+### 사용 방법론 및 도구
+
+- **LLM-Wiki 패턴** — 마크다운 디렉터리 + `index.md` + 페이지간 cross-reference + `log.md`. 임베딩·벡터 DB 불필요. 원전: [Karpathy gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f).
+- **Claude Code** — `Read` / `Glob` / `Grep` 기본 도구만으로 위키 탐색·인제스트. 별도 retrieval 인프라 비용 0.
+- **운영 규칙**: [`wiki/CLAUDE.md`](wiki/CLAUDE.md) — ingest / query / lint 워크플로우 정의
+- **공정성 통제**: 페이지 front-matter `source:` 필드 + fidelity lint로 위키가 원문의 *오버레이*임을 보장 (편집적 재작성 금지)
+
+### 참고 문헌 (자세한 인용은 [`docs/rag-vs-wiki-design.md`](docs/rag-vs-wiki-design.md))
+
+1. **Han et al. 2025** — *RAG vs. GraphRAG: A Systematic Evaluation and Key Insights* (arXiv:[2502.11371](https://arxiv.org/abs/2502.11371)). 통합 평가 프로토콜의 방법론적 모델
+2. **Edge et al. 2024** — *From Local to Global: A Graph RAG Approach to Query-Focused Summarization* (arXiv:[2404.16130](https://arxiv.org/abs/2404.16130)). Microsoft GraphRAG 원논문 — entity KG + community summary
+3. **Karpathy 2026** — [LLM-Wiki gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f). 본 실험의 직접적 framing
+4. **Xu et al. 2024** — *Retrieval-Augmented Generation with Knowledge Graphs for Customer Service QA* (arXiv:[2404.17723](https://arxiv.org/abs/2404.17723)). LinkedIn 실배포 사례 (MRR +77.6%, 해결 시간 −28.6%)
+5. **Xiang et al. 2025** — *When to use Graphs in RAG* (arXiv:[2506.05690](https://arxiv.org/abs/2506.05690)). 그래프 구조가 *항상* 유리하진 않다는 균형추 — 카테고리별 예측의 근거
+
+### TODO (다음 단계)
+
+- [x] PoC: 위키 스키마(`wiki/CLAUDE.md`) + 3개 페이지 변환 + cross-reference 삼각형
+- [x] 5개 문헌 기반 설계 문서 (`docs/rag-vs-wiki-design.md`) — 가설, 조건 매트릭스, 카테고리별 예측, 참고문헌
+- [ ] 나머지 17개 `synthetic-memory/` 파일 위키 변환 → Condition E 코퍼스 완성
+- [ ] `spawn-prompts.md` 에 Condition E/F 프롬프트 추가
+- [ ] Fidelity lint 스크립트 (위키 ↔ 원문 사실 일치 검증)
+- [ ] 평가 자동화 스크립트 (taskset 20문항 × Condition E 일괄 실행 → 점수 산출)
+- [ ] **자동 최적화 단계 — 최종 목표**: [`karpathy/autoresearch`](https://github.com/karpathy/autoresearch) 적용
+  - **autoresearch란**: 단일 GPU 환경에서 AI 에이전트가 코드를 수정·재학습·검증하며 *밤새 자율적으로 실험*하도록 만든 프레임워크 (MIT). 한 번의 실험 사이클 약 5분, 시간당 ~12회 반복, 메트릭 기반으로 변경을 채택/폐기.
+  - **본 연구에 적용 시**: 에이전트가 **위키 구조 자체**(페이지 granularity, 링크 밀도, `index.md` 포맷, ingest 프롬프트, `## Related` 깊이 등)를 변형하면서 taskset 점수를 메트릭으로 *자동 탐색*.
+  - **연구 호의 2단계**: ① 사람이 손으로 만든 LLM-Wiki 베이스라인(현재 PoC) → ② autoresearch로 *최적 위키 구조* 자동 발견. 수동 설계의 한계를 넘어, 이 워크로드에서 가장 효과적인 메모리 구조가 무엇인지 *경험적으로* 결정하는 것이 최종 목표.
+
+---
+
 ## Repository Structure
 
 ```
@@ -49,11 +105,23 @@ This dataset accompanies a controlled experiment comparing four memory condition
 │   ├── condition-D-responses.md    # Baseline condition responses (English)
 │   └── condition-D-responses_KO.md # Baseline condition responses (Korean)
 ├── experiential-memory-stats.md    # Statistics about Condition A (no raw data)
-└── soul-spec-anonymized/           # Anonymized Soul Spec used across conditions
-    ├── SOUL.md
-    ├── IDENTITY.md
-    ├── AGENTS.md
-    └── soul.json
+├── soul-spec-anonymized/           # Anonymized Soul Spec used across conditions
+│   ├── SOUL.md
+│   ├── IDENTITY.md
+│   ├── AGENTS.md
+│   └── soul.json
+│
+│   # v2 extension (RAG vs LLM-Wiki) — branch claude/rag-vs-graph-comparison-vAOGf
+├── docs/
+│   └── rag-vs-wiki-design.md       # Conditions E/F design, hypotheses, references
+└── wiki/                           # Conditions E/F: LLM-Wiki representation
+    ├── CLAUDE.md                   # Wiki operating rules (ingest/query/lint)
+    ├── index.md                    # Catalog of all wiki pages
+    ├── log.md                      # Append-only action log
+    └── pages/                      # Wiki pages (PoC: 3/20 converted)
+        ├── nextjs-supabase.md
+        ├── supabase-auth-rls.md
+        └── fullstack-architecture.md
 ```
 
 ## Requesting Private Data
