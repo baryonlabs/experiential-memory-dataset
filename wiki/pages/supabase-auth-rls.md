@@ -20,7 +20,9 @@ Enable providers in Dashboard → Authentication → Providers.
 
 ## Auth Flow (PKCE)
 
-For server-side frameworks (Next.js, SvelteKit), use the PKCE flow. Framework-specific wiring for Next.js App Router is in [nextjs-supabase](nextjs-supabase.md#authentication-flow):
+For server-side frameworks (Next.js, SvelteKit), use the PKCE flow:
+
+(Framework-specific wiring for Next.js App Router: [nextjs-supabase](nextjs-supabase.md#authentication-flow).)
 
 1. Client calls `signInWithOAuth({ provider: 'google' })`.
 2. User is redirected to the provider.
@@ -81,7 +83,9 @@ Supabase provides SQL helper functions:
 
 ## Service Role Bypass
 
-The `service_role` key bypasses RLS entirely. Use it only on the server for admin operations (cf. service role client in [nextjs-supabase](nextjs-supabase.md#client-initialization)):
+The `service_role` key bypasses RLS entirely. Use it only on the server for admin operations:
+
+(Service role client in Next.js: [nextjs-supabase](nextjs-supabase.md#client-initialization).)
 
 ```typescript
 const supabaseAdmin = createClient(url, serviceRoleKey);

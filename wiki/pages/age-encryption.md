@@ -120,7 +120,7 @@ const decrypted = await new Decrypter()
 
 ## Use Cases for E2E Sync
 
-For syncing encrypted data across devices (cf. encrypted secrets in [git-workflow](git-workflow.md) and CI secrets in [github-actions](github-actions.md)):
+For syncing encrypted data across devices:
 
 1. Generate a keypair per device.
 2. Encrypt shared secrets to all device public keys (multi-recipient).

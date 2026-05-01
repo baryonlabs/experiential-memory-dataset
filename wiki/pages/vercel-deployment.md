@@ -9,7 +9,9 @@ source: synthetic-memory/vercel-deployment.md
 
 ## Project Configuration
 
-Vercel auto-detects Next.js projects (see [nextjs-supabase](nextjs-supabase.md) for the framework integration). Key settings in `vercel.json`:
+Vercel auto-detects Next.js projects. Key settings in `vercel.json`:
+
+(Framework integration: [nextjs-supabase](nextjs-supabase.md).)
 
 ```json
 {

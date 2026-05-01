@@ -23,7 +23,7 @@ Create a utility file for Supabase clients:
 
 - **Browser client** (`createBrowserClient`): Used in Client Components. Reads cookies automatically.
 - **Server client** (`createServerClient`): Used in Server Components, Route Handlers, and Server Actions. Requires passing cookie handlers from `next/headers`.
-- **Service role client**: For admin operations bypassing RLS — see [supabase-auth-rls](supabase-auth-rls.md) for the security model. Never expose the service role key to the client.
+- **Service role client**: For admin operations bypassing RLS. Never expose the service role key to the client. (Security model: [supabase-auth-rls](supabase-auth-rls.md).)
 
 ```typescript
 // utils/supabase/server.ts
@@ -42,7 +42,9 @@ export function createClient() {
 
 ## Authentication Flow
 
-Use Supabase Auth with PKCE flow for server-side rendering (full PKCE detail in [supabase-auth-rls](supabase-auth-rls.md#auth-flow-pkce)):
+Use Supabase Auth with PKCE flow for server-side rendering:
+
+(Full PKCE detail: [supabase-auth-rls](supabase-auth-rls.md#auth-flow-pkce).)
 
 1. **Sign-up/Sign-in**: Call `supabase.auth.signInWithOAuth()` or `signInWithPassword()`.
 2. **Callback route**: Create `/auth/callback/route.ts` to exchange the auth code for a session.
@@ -81,7 +83,7 @@ The `NEXT_PUBLIC_` prefix exposes variables to the browser. Never prefix the ser
 ## Common Patterns
 
 - **Optimistic UI**: Update local state immediately, then sync with Supabase. Roll back on error.
-- **Row-Level Security**: Always enable RLS on tables — see [supabase-auth-rls](supabase-auth-rls.md). The anon key is public; security depends entirely on RLS policies.
+- **Row-Level Security**: Always enable RLS on tables. The anon key is public; security depends entirely on RLS policies. (Policy patterns: [supabase-auth-rls](supabase-auth-rls.md).)
 - **Type generation**: Run `supabase gen types typescript` to generate TypeScript types from your database schema.
 
 ## Related

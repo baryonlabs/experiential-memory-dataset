@@ -65,12 +65,53 @@ Use only your general knowledge and the question context.
 - **Memory source**: None (LLM general knowledge only)
 - **Token usage**: 21.3k tokens, runtime 1m50s
 
+## Condition E — Synthetic Wiki (LLM-Wiki retrieval)
+
+```
+You are an AI development assistant. Before answering the questions below,
+first read <WIKI_DIR>/CLAUDE.md to learn the wiki's operating rules. Then
+read <WIKI_DIR>/index.md to see the catalog. For each question, identify
+relevant pages by tag/summary in index.md, read those pages in full from
+<WIKI_DIR>/pages/, and follow `## Related` links transitively up to depth 2
+when relevant. Cite the page (e.g., [page#section]) for each factual claim.
+Do NOT read files from <MEMORY_DIR>, <SYNTHETIC_DIR>, or any other source.
+Use only Read / Glob / Grep over <WIKI_DIR>. Then answer all 15 questions
+in <TASK_FILE> thoroughly.
+```
+
+- **Label**: `experiment-condition-E`
+- **Memory source**: Same 20 synthetic files as B, restructured as an LLM-Wiki at `wiki/` (front-matter + `index.md` + `## Related` cross-refs). Content fidelity verified by `scripts/lint_fidelity.py` before evaluation.
+- **Tool surface**: `Read`, `Glob`, `Grep` only. No `memory_search`, no semantic/vector retrieval, no embeddings.
+- **Hypothesis tested**: H1 — does retrieval method alone (B→E) recover the gap to baseline?
+- **Token usage / runtime**: TBD (record on first eval run)
+
+## Condition F — Experiential Wiki (LLM-Wiki retrieval, private)
+
+```
+You are an AI development assistant. Before answering the questions below,
+first read <WIKI_DIR>/CLAUDE.md to learn the wiki's operating rules. Then
+read <WIKI_DIR>/index.md to see the catalog. For each question, identify
+relevant pages by tag/summary in index.md, read those pages in full from
+<WIKI_DIR>/pages/, and follow `## Related` links transitively up to depth 2
+when relevant. Cite the page (e.g., [page#section]) for each factual claim.
+Do NOT read files from <MEMORY_DIR>, <SYNTHETIC_DIR>, or any other source.
+Use only Read / Glob / Grep over <WIKI_DIR>. Then answer all 15 questions
+in <TASK_FILE> thoroughly.
+```
+
+- **Label**: `experiment-condition-F`
+- **Memory source**: Same ~157 experiential files as A, restructured as an LLM-Wiki. Private (contains sensitive info) — produced and evaluated by researchers with access to the original experiential corpus, not committed to the public repo.
+- **Tool surface**: Same as E.
+- **Hypothesis tested**: H2 — does retrieval method help when the corpus already has implicit cross-reference structure from real collaboration?
+- **Token usage / runtime**: TBD
+
 ## Placeholders
 
 | Placeholder | Description |
 |-------------|-------------|
 | `<MEMORY_DIR>` | Directory containing experiential memory files (~157 .md files) |
 | `<SYNTHETIC_DIR>` | Directory containing synthetic memory files (~20 .md files) |
+| `<WIKI_DIR>` | Directory containing the LLM-Wiki representation (`CLAUDE.md`, `index.md`, `log.md`, `pages/`). For Condition E this is the public `wiki/` directory; for Condition F it is the researcher's private experiential-wiki build. |
 | `<TASK_FILE>` | File containing the 15 evaluation questions (see `taskset.md`) |
 
 ## Reproducing with OpenClaw

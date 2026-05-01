@@ -29,7 +29,7 @@ When choosing a full-stack architecture, consider:
 ```
 ┌─────────────────────────────────┐
 │        Client (Browser)         │
-│   Next.js React (App Router)    │
+│   Next.js React (App Router)   │
 ├─────────────────────────────────┤
 │       Vercel Edge Network       │
 │   CDN, Edge Middleware, ISR     │
@@ -68,8 +68,10 @@ Use `app/api/` routes for:
 
 Use Supabase client directly for:
 
-- Real-time subscriptions (see [nextjs-supabase](nextjs-supabase.md#real-time-subscriptions)).
+- Real-time subscriptions.
 - Simple reads where RLS provides sufficient authorization.
+
+(Subscription setup details: [nextjs-supabase](nextjs-supabase.md#real-time-subscriptions).)
 
 ## Database Design
 
@@ -84,7 +86,9 @@ Use Supabase client directly for:
 2. JWT stored in HTTP-only cookies (via `@supabase/ssr`).
 3. Middleware refreshes session on every request.
 4. Server Components call `getUser()` for auth checks.
-5. RLS policies enforce data access at the database level — see [supabase-auth-rls](supabase-auth-rls.md).
+5. RLS policies enforce data access at the database level.
+
+(Policy syntax and helper functions: [supabase-auth-rls](supabase-auth-rls.md).)
 
 ## Monorepo vs Polyrepo
 

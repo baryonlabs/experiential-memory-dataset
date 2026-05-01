@@ -33,7 +33,9 @@ Canonical URL setup interacts with DNS (`www` vs apex) and redirects — see [do
 <meta name="twitter:card" content="summary_large_image">
 ```
 
-OG images: 1200×630px recommended. Use dynamic OG image generation (e.g., `@vercel/og`) for blog posts — works natively on [vercel-deployment](vercel-deployment.md).
+OG images: 1200×630px recommended. Use dynamic OG image generation (e.g., `@vercel/og`) for blog posts.
+
+(`@vercel/og` runs natively on [vercel-deployment](vercel-deployment.md).)
 
 ### Structured Data (JSON-LD)
 
@@ -51,7 +53,7 @@ OG images: 1200×630px recommended. Use dynamic OG image generation (e.g., `@ver
 
 ### Sitemap & Robots
 
-- `sitemap.xml`: List all indexable URLs. Most frameworks generate automatically (e.g., [hugo-blog](hugo-blog.md), [docusaurus-docs](docusaurus-docs.md)).
+- `sitemap.xml`: List all indexable URLs. Most frameworks generate automatically. (E.g. [hugo-blog](hugo-blog.md), [docusaurus-docs](docusaurus-docs.md).)
 - `robots.txt`: Control crawler access. `Disallow: /api/` for API routes.
 
 ## Blog Crossposting Strategy

@@ -69,11 +69,15 @@ This dataset accompanies a controlled experiment comparing four memory condition
 
 - [x] PoC: 위키 스키마(`wiki/CLAUDE.md`) + 3개 페이지 변환 + cross-reference 삼각형
 - [x] 5개 문헌 기반 설계 문서 (`docs/rag-vs-wiki-design.md`) — 가설, 조건 매트릭스, 카테고리별 예측, 참고문헌
-- [ ] 나머지 17개 `synthetic-memory/` 파일 위키 변환 → Condition E 코퍼스 완성
-- [ ] `spawn-prompts.md` 에 Condition E/F 프롬프트 추가
-- [ ] Fidelity lint 스크립트 (위키 ↔ 원문 사실 일치 검증)
-- [ ] 평가 자동화 스크립트 (taskset 20문항 × Condition E 일괄 실행 → 점수 산출)
-- [ ] **자동 최적화 단계 — 최종 목표**: [`karpathy/autoresearch`](https://github.com/karpathy/autoresearch) 적용
+- [x] 나머지 17개 `synthetic-memory/` 파일 위키 변환 → Condition E 코퍼스 완성 (20/20)
+- [x] `spawn-prompts.md` 에 Condition E/F 프롬프트 추가
+- [x] Fidelity lint 스크립트 (`scripts/lint_fidelity.py`) — 20/20 페이지 통과 (substring 의미)
+- [x] 평가 자동화 스크립트 (`scripts/run_condition_e.py`) — Anthropic SDK tool-use, sandboxed Read/Glob/Grep
+- [x] LLM-as-judge 채점 스크립트 (`scripts/score_responses.py`) — `evaluation/rubric.md` 기반 1–5 점수
+- [x] [`karpathy/autoresearch`](https://github.com/karpathy/autoresearch) 통합 scaffolding (`autoresearch/program.md`, `autoresearch/run_experiment.sh`) — 변형 가능 타깃·loss·cycle 정의
+- [ ] **첫 실측 실행**: API 키 셋업 후 `bash autoresearch/run_experiment.sh` 로 베이스라인 loss 측정
+- [ ] **자동 최적화 루프 가동**: autoresearch 본체에 본 scaffolding을 연결해 밤새 자율 실험 (위키 구조 → loss 최적화)
+- [ ] Condition F (experiential-wiki, private) — 협력 연구자 환경에서 동일 파이프라인 적용
   - **autoresearch란**: 단일 GPU 환경에서 AI 에이전트가 코드를 수정·재학습·검증하며 *밤새 자율적으로 실험*하도록 만든 프레임워크 (MIT). 한 번의 실험 사이클 약 5분, 시간당 ~12회 반복, 메트릭 기반으로 변경을 채택/폐기.
   - **본 연구에 적용 시**: 에이전트가 **위키 구조 자체**(페이지 granularity, 링크 밀도, `index.md` 포맷, ingest 프롬프트, `## Related` 깊이 등)를 변형하면서 taskset 점수를 메트릭으로 *자동 탐색*.
   - **연구 호의 2단계**: ① 사람이 손으로 만든 LLM-Wiki 베이스라인(현재 PoC) → ② autoresearch로 *최적 위키 구조* 자동 발견. 수동 설계의 한계를 넘어, 이 워크로드에서 가장 효과적인 메모리 구조가 무엇인지 *경험적으로* 결정하는 것이 최종 목표.
@@ -110,15 +114,23 @@ This dataset accompanies a controlled experiment comparing four memory condition
 │
 │   # v2 extension (RAG vs LLM-Wiki) — branch claude/rag-vs-graph-comparison-vAOGf
 ├── docs/
-│   └── rag-vs-wiki-design.md       # Conditions E/F design, hypotheses, references
-└── wiki/                           # Conditions E/F: LLM-Wiki representation
-    ├── CLAUDE.md                   # Wiki operating rules (ingest/query/lint)
-    ├── index.md                    # Catalog of all wiki pages
-    ├── log.md                      # Append-only action log
-    └── pages/                      # Wiki pages (PoC: 3/20 converted)
-        ├── nextjs-supabase.md
-        ├── supabase-auth-rls.md
-        └── fullstack-architecture.md
+│   ├── rag-vs-wiki-design.md       # Conditions E/F design, hypotheses, references
+│   ├── three-paradigms-KO.md       # RAG vs GraphRAG vs LLM-Wiki definitions
+│   └── related-work-public-KO.md   # 5-paper sanitized lit review
+├── wiki/                           # Conditions E/F: LLM-Wiki representation
+│   ├── CLAUDE.md                   # Wiki operating rules (ingest/query/lint)
+│   ├── index.md                    # Catalog (20 pages, 7 clusters)
+│   ├── log.md                      # Append-only action log
+│   └── pages/                      # 20 wiki pages (1:1 with synthetic-memory/)
+├── scripts/                        # Eval / lint / score automation
+│   ├── lint_fidelity.py            # Wiki vs source fidelity check
+│   ├── run_condition_e.py          # Condition E runner (Anthropic SDK tool-use)
+│   └── score_responses.py          # LLM-as-judge rubric scorer
+├── autoresearch/                   # karpathy/autoresearch integration
+│   ├── README.md                   # Targets, loss, cycle, guardrails
+│   ├── program.md                  # Agent instructions
+│   └── run_experiment.sh           # lint -> eval -> score -> emit loss
+└── results/                        # Eval run outputs (git-ignored payloads, kept as needed)
 ```
 
 ## Requesting Private Data

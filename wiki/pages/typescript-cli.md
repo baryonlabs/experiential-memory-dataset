@@ -37,7 +37,9 @@ my-cli/
 }
 ```
 
-The `bin` field registers the CLI command. The `files` field ensures only compiled output is published — see [npm-publishing](npm-publishing.md#pre-publish-checklist) for the full publish checklist.
+The `bin` field registers the CLI command. The `files` field ensures only compiled output is published.
+
+(Full publish checklist: [npm-publishing](npm-publishing.md#pre-publish-checklist).)
 
 ## TypeScript Configuration
 
