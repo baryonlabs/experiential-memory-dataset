@@ -31,8 +31,9 @@ This dataset accompanies a controlled experiment comparing four memory condition
 
 ## v2 연구 확장: RAG vs LLM-Wiki 비교 (진행 중)
 
-> 이 섹션은 원 실험을 확장하는 후속 연구입니다.
+> 이 섹션은 원 실험을 확장하는 후속 연구입니다. 본 fork 연구는 **홍승우 (Hong Seung-woo)** 가 원 실험에서 *retrieval method*가 단일(RAG)로 고정된 한계를 지적하며 진행하는 확장입니다.
 > 작업 브랜치: [`claude/rag-vs-graph-comparison-vAOGf`](https://github.com/baryonlabs/experiential-memory-dataset/tree/claude/rag-vs-graph-comparison-vAOGf)
+> 패러다임 비교 정의: [`docs/three-paradigms-KO.md`](docs/three-paradigms-KO.md)
 > 설계 문서: [`docs/rag-vs-wiki-design.md`](docs/rag-vs-wiki-design.md)
 
 ### 동기

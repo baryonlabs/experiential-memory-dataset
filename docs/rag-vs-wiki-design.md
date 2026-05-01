@@ -3,6 +3,8 @@
 **Status**: Proposal / PoC stage
 **Branch**: `claude/rag-vs-graph-comparison-vAOGf`
 **Parent paper**: *Experiential vs Synthetic Memory in Long-Running AI Agents* (Zenodo DOI 10.5281/zenodo.18798227)
+**Fork researcher**: 홍승우 (Hong Seung-woo) — extends the parent experiment by adding *retrieval method* as a second variable
+**Three-paradigm definitions**: see [`three-paradigms-KO.md`](three-paradigms-KO.md) for RAG vs GraphRAG vs LLM-Wiki comparison and the rationale for prioritizing LLM-Wiki over GraphRAG in this fork
 
 ## Motivation
 
