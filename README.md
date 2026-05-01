@@ -61,13 +61,9 @@ This dataset accompanies a controlled experiment comparing four memory condition
 - **운영 규칙**: [`wiki/CLAUDE.md`](wiki/CLAUDE.md) — ingest / query / lint 워크플로우 정의
 - **공정성 통제**: 페이지 front-matter `source:` 필드 + fidelity lint로 위키가 원문의 *오버레이*임을 보장 (편집적 재작성 금지)
 
-### 참고 문헌 (자세한 인용은 [`docs/rag-vs-wiki-design.md`](docs/rag-vs-wiki-design.md))
+### 참고 문헌
 
-1. **Han et al. 2025** — *RAG vs. GraphRAG: A Systematic Evaluation and Key Insights* (arXiv:[2502.11371](https://arxiv.org/abs/2502.11371)). 통합 평가 프로토콜의 방법론적 모델
-2. **Edge et al. 2024** — *From Local to Global: A Graph RAG Approach to Query-Focused Summarization* (arXiv:[2404.16130](https://arxiv.org/abs/2404.16130)). Microsoft GraphRAG 원논문 — entity KG + community summary
-3. **Karpathy 2026** — [LLM-Wiki gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f). 본 실험의 직접적 framing
-4. **Xu et al. 2024** — *Retrieval-Augmented Generation with Knowledge Graphs for Customer Service QA* (arXiv:[2404.17723](https://arxiv.org/abs/2404.17723)). LinkedIn 실배포 사례 (MRR +77.6%, 해결 시간 −28.6%)
-5. **Xiang et al. 2025** — *When to use Graphs in RAG* (arXiv:[2506.05690](https://arxiv.org/abs/2506.05690)). 그래프 구조가 *항상* 유리하진 않다는 균형추 — 카테고리별 예측의 근거
+5개 핵심 선행 연구의 deep summary와 본 fork와의 관계는 [`docs/related-work-public-KO.md`](docs/related-work-public-KO.md) 참조 (Han et al. 2025 / Edge et al. 2024 / Karpathy 2026 / Xu et al. 2024 / Xiang et al. 2025). 짧은 인용 형식은 [`docs/rag-vs-wiki-design.md`](docs/rag-vs-wiki-design.md#references) 참조.
 
 ### TODO (다음 단계)
 

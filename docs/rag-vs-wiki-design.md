@@ -171,6 +171,8 @@ Condition F (experiential-wiki) requires the private experiential corpus, availa
 
 ## References
 
+> Deep summaries and per-paper "본 fork에서의 의미" analysis: see [`related-work-public-KO.md`](related-work-public-KO.md). Below: terse citation form for in-text references.
+
 - <a id="ref-ragvsgraphrag"></a>**[Han et al. 2025]** Han, H., Ma, L., Wang, Y., Shomer, H., Lei, Y., Qi, Z., Guo, K., Hua, Z., Long, B., Liu, H., Aggarwal, C. C., & Tang, J. (2025). *RAG vs. GraphRAG: A Systematic Evaluation and Key Insights*. arXiv:2502.11371. <https://arxiv.org/abs/2502.11371>
   *Used here as the methodological model for unified evaluation protocols (preprocessing, retrieval, generation held constant). Our contribution differs by holding content constant and varying retrieval method on a software-development workload.*
 
