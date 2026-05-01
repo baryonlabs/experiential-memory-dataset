@@ -38,7 +38,8 @@ from pathlib import Path
 try:
     import anthropic
 except ImportError:
-    sys.exit("Install: pip install anthropic")
+    anthropic = None  # type: ignore[assignment]
+    # Lazy: only required for live runs; --dry-run works without it.
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_WIKI = REPO_ROOT / "wiki"
@@ -172,21 +173,32 @@ def dispatch_tool(wiki_root: Path, name: str, params: dict) -> str:
 def parse_taskset(taskset_path: Path) -> list[tuple[str, str]]:
     """Extract (task_id, task_text) pairs from taskset.md.
 
-    Tasks are identified by a heading or marker like '## IR-1', '## CT-3', etc.
-    Returns the body text under each heading as the task content.
+    The taskset uses bold-marker format: each task is introduced by
+    `**XX-N**:` (e.g., `**IR-1**:`, `**CT-3**:`) on its own paragraph.
+    Categories are grouped under `## Category N: ...` headings; an
+    `## Evaluation Rubric` section follows the tasks and is skipped.
+
+    Returns the body text following each marker until the next task or
+    section break, paired with the task id.
     """
     text = taskset_path.read_text(encoding="utf-8")
-    pattern = re.compile(r"^##\s+([A-Z]{2}-\d+)\b(.*)$", re.MULTILINE)
-    matches = list(pattern.finditer(text))
+
+    # Cut off the trailing rubric / appendix.
+    end = re.search(r"^##\s+Evaluation Rubric\b", text, re.MULTILINE)
+    body = text[: end.start()] if end else text
+
+    # Match `**XX-N**: rest-of-paragraph` non-greedily up to the next
+    # task marker, the next H2 heading, or end of body.
+    task_re = re.compile(
+        r"\*\*([A-Z]{2}-\d+)\*\*:\s*(.+?)(?=\n\s*\n\*\*[A-Z]{2}-\d+\*\*:|\n\s*\n##\s+|\n\s*\n---|\Z)",
+        re.DOTALL,
+    )
     tasks: list[tuple[str, str]] = []
-    for i, m in enumerate(matches):
+    for m in task_re.finditer(body):
         task_id = m.group(1)
-        start = m.end()
-        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
-        body = text[start:end].strip()
-        # Include the heading line so the task text is self-contained.
-        header_rest = m.group(2).strip()
-        full = (f"## {task_id} {header_rest}".rstrip() + "\n\n" + body).strip()
+        task_body = m.group(2).strip()
+        # Re-render so the agent sees the full marker too.
+        full = f"**{task_id}**: {task_body}"
         tasks.append((task_id, full))
     return tasks
 
@@ -309,6 +321,11 @@ def main() -> int:
     ap.add_argument("--model", default="claude-opus-4-5")
     ap.add_argument("--max-tool-calls", type=int, default=40)
     ap.add_argument("--output", type=Path, default=None)
+    ap.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Parse and list tasks without making API calls. Useful for verifying the parser, checking task count, and previewing what would run.",
+    )
     args = ap.parse_args()
 
     if not args.wiki_dir.exists():
@@ -325,6 +342,21 @@ def main() -> int:
         if not tasks:
             sys.exit(f"task {args.task} not found in {args.taskset}")
 
+    if args.dry_run:
+        print(f"Parsed {len(tasks)} tasks from {args.taskset.relative_to(REPO_ROOT)}:")
+        for tid, body in tasks:
+            preview = body.split("\n", 1)[0]
+            if len(preview) > 100:
+                preview = preview[:97] + "..."
+            print(f"  {tid}: {preview}")
+        print(f"\nWould run model={args.model} with max_tool_calls={args.max_tool_calls}.")
+        print(f"Soul spec: {args.soul.relative_to(REPO_ROOT)} ({len(soul_spec)} chars)")
+        print(f"Wiki dir:  {args.wiki_dir.relative_to(REPO_ROOT)}")
+        print("(--dry-run: no API calls made)")
+        return 0
+
+    if anthropic is None:
+        sys.exit("Install for live runs: pip install anthropic")
     client = anthropic.Anthropic()
     RESULTS_DIR.mkdir(exist_ok=True)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
