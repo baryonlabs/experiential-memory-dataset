@@ -75,9 +75,15 @@ def build_claude_cmd(
         "--add-dir", str(wiki_dir.resolve()),
         "--allowedTools", "Read,Glob,Grep",
         "--model", model,
-        "--output-format", "json",
+        "--output-format", "stream-json",
+        "--verbose",
         "--permission-mode", "bypassPermissions",
     ]
+
+
+def _progress(started: float, msg: str) -> None:
+    elapsed = time.time() - started
+    print(f"      [{elapsed:5.1f}s] {msg}", file=sys.stderr, flush=True)
 
 
 def run_one_task_via_claude_code(
@@ -88,69 +94,143 @@ def run_one_task_via_claude_code(
     model: str,
     timeout_seconds: int,
 ) -> dict:
+    """Run one task via `claude -p` with stream-json output, printing
+    live progress (tool calls, response chunks) to stderr as events arrive.
+    """
+    import threading
+
     prompt = CONDITION_E_PROMPT_TEMPLATE.format(task=task_text)
     cmd = build_claude_cmd(prompt, soul_spec, wiki_dir, model, timeout_seconds)
 
     started = time.time()
+    proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        bufsize=1,
+        cwd=REPO_ROOT,
+    )
+
+    # Watchdog: kill the subprocess if it exceeds the timeout. The reading
+    # loop exits naturally when the pipe closes.
+    done = threading.Event()
+    timed_out = {"flag": False}
+
+    def watchdog() -> None:
+        if not done.wait(timeout=timeout_seconds):
+            timed_out["flag"] = True
+            try:
+                proc.kill()
+            except Exception:
+                pass
+
+    threading.Thread(target=watchdog, daemon=True).start()
+
+    response_text = ""
+    tool_calls: list[dict] = []
+    final_usage: dict = {}
+    session_id: str | None = None
+    stop_reason: str | None = None
+
     try:
-        proc = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds,
-            cwd=REPO_ROOT,
-        )
-    except subprocess.TimeoutExpired:
+        for line in proc.stdout or []:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                evt = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+
+            etype = evt.get("type")
+            if etype == "system" and evt.get("subtype") == "init":
+                session_id = evt.get("session_id")
+                _progress(started, f"init  session={(session_id or '?')[:8]}  model={evt.get('model', model)}")
+            elif etype == "assistant":
+                msg = evt.get("message", {})
+                for block in msg.get("content", []):
+                    btype = block.get("type")
+                    if btype == "tool_use":
+                        name = block.get("name", "?")
+                        inp = block.get("input", {}) or {}
+                        detail = (
+                            inp.get("path")
+                            or inp.get("pattern")
+                            or inp.get("file_path")
+                            or ""
+                        )
+                        _progress(started, f"→ {name}({str(detail)[:60]})")
+                        tool_calls.append({"name": name, "input": inp})
+                    elif btype == "text":
+                        text = block.get("text", "")
+                        if text:
+                            response_text += text
+                            preview = " ".join(text.split())[:80]
+                            if preview:
+                                _progress(started, f"← {preview}{'…' if len(text) > 80 else ''}")
+            elif etype == "user":
+                # tool_result echoed back; suppress to keep output compact
+                pass
+            elif etype == "result":
+                stop_reason = evt.get("stop_reason")
+                final_usage = evt.get("usage", {}) or {}
+                final_text = evt.get("result")
+                if final_text:
+                    response_text = final_text
+                _progress(
+                    started,
+                    f"done  stop={stop_reason}  in={final_usage.get('input_tokens', 0)} "
+                    f"out={final_usage.get('output_tokens', 0)}",
+                )
+            elif etype == "error":
+                _progress(started, f"ERROR {evt.get('message', evt)}")
+    finally:
+        done.set()
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait()
+
+    wall = round(time.time() - started, 2)
+
+    if timed_out["flag"]:
         return {
             "task_id": task_id,
             "task": task_text,
             "response": f"(timeout after {timeout_seconds}s)",
             "error": "timeout",
-            "wall_seconds": round(time.time() - started, 2),
+            "wall_seconds": wall,
             "model": model,
             "backend": "claude-code",
         }
 
-    wall = round(time.time() - started, 2)
-
     if proc.returncode != 0:
+        stderr = proc.stderr.read() if proc.stderr else ""
         return {
             "task_id": task_id,
             "task": task_text,
-            "response": "(claude CLI exited non-zero)",
-            "error": proc.stderr[:1000],
+            "response": response_text or "(claude CLI exited non-zero)",
+            "error": stderr[:1000],
             "returncode": proc.returncode,
             "wall_seconds": wall,
             "model": model,
             "backend": "claude-code",
         }
 
-    try:
-        out = json.loads(proc.stdout)
-    except json.JSONDecodeError as e:
-        return {
-            "task_id": task_id,
-            "task": task_text,
-            "response": "(failed to parse JSON output)",
-            "error": f"{e}; raw: {proc.stdout[:500]}",
-            "wall_seconds": wall,
-            "model": model,
-            "backend": "claude-code",
-        }
-
-    # Normalize to the same schema run_condition_e.py uses, so score_responses.py
-    # works without changes.
-    usage = out.get("usage", {}) or {}
     return {
         "task_id": task_id,
         "task": task_text,
-        "response": out.get("result", ""),
-        "session_id": out.get("session_id"),
-        "input_tokens": usage.get("input_tokens", 0),
-        "output_tokens": usage.get("output_tokens", 0),
-        "cache_creation_input_tokens": usage.get("cache_creation_input_tokens", 0),
-        "cache_read_input_tokens": usage.get("cache_read_input_tokens", 0),
-        "stop_reason": out.get("stop_reason"),
+        "response": response_text,
+        "session_id": session_id,
+        "input_tokens": final_usage.get("input_tokens", 0),
+        "output_tokens": final_usage.get("output_tokens", 0),
+        "cache_creation_input_tokens": final_usage.get("cache_creation_input_tokens", 0),
+        "cache_read_input_tokens": final_usage.get("cache_read_input_tokens", 0),
+        "stop_reason": stop_reason,
+        "tool_calls": tool_calls,
+        "tool_call_count": len(tool_calls),
         "wall_seconds": wall,
         "model": model,
         "backend": "claude-code",
