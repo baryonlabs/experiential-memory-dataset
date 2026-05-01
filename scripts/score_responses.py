@@ -20,13 +20,15 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
 try:
     import anthropic
 except ImportError:
-    sys.exit("Install: pip install anthropic")
+    anthropic = None  # type: ignore[assignment]
+    # Lazy: only required for --backend api; --backend claude-code uses subprocess.
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_RUBRIC = REPO_ROOT / "evaluation" / "rubric.md"
@@ -58,8 +60,8 @@ SCORE_RE = re.compile(r"^\s*SCORE\s*:\s*([1-5])\b", re.MULTILINE)
 REASON_RE = re.compile(r"^\s*REASON\s*:\s*(.+?)\s*$", re.MULTILINE)
 
 
-def judge_one(
-    client: anthropic.Anthropic,
+def judge_one_via_api(
+    client,
     rubric: str,
     task: str,
     response: str,
@@ -78,6 +80,42 @@ def judge_one(
         ],
     )
     text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text")
+    return _parse_judge_text(text)
+
+
+def judge_one_via_claude_code(
+    rubric: str,
+    task: str,
+    response: str,
+    model: str,
+    timeout_seconds: int = 120,
+) -> tuple[int | None, str]:
+    prompt = JUDGE_PROMPT.format(rubric=rubric, task=task, response=response)
+    cmd = [
+        "claude",
+        "-p", prompt,
+        "--no-session-persistence",
+        "--model", model,
+        "--output-format", "json",
+        "--allowedTools", "",  # judge needs no tools — pure text in/out
+        "--permission-mode", "bypassPermissions",
+    ]
+    try:
+        proc = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=timeout_seconds
+        )
+    except subprocess.TimeoutExpired:
+        return None, f"(judge timeout after {timeout_seconds}s)"
+    if proc.returncode != 0:
+        return None, f"(claude exit {proc.returncode}: {proc.stderr[:200]})"
+    try:
+        out = json.loads(proc.stdout)
+    except json.JSONDecodeError as e:
+        return None, f"(judge JSON parse: {e})"
+    return _parse_judge_text(out.get("result", ""))
+
+
+def _parse_judge_text(text: str) -> tuple[int | None, str]:
     score_m = SCORE_RE.search(text)
     reason_m = REASON_RE.search(text)
     score = int(score_m.group(1)) if score_m else None
@@ -89,7 +127,17 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("results_json", type=Path)
     ap.add_argument("--rubric", type=Path, default=DEFAULT_RUBRIC)
-    ap.add_argument("--judge-model", default="claude-sonnet-4-5")
+    ap.add_argument(
+        "--backend",
+        choices=["claude-code", "api"],
+        default="claude-code",
+        help="Judge backend. 'claude-code' uses local CLI (subscription auth, no API key). 'api' uses Anthropic SDK.",
+    )
+    ap.add_argument(
+        "--judge-model",
+        default=None,
+        help="Model alias. Defaults: 'sonnet' (claude-code) or 'claude-sonnet-4-6' (api).",
+    )
     ap.add_argument("--output", type=Path, default=None)
     args = ap.parse_args()
 
@@ -98,19 +146,35 @@ def main() -> int:
     if not args.rubric.exists():
         sys.exit(f"rubric not found: {args.rubric}")
 
+    if args.judge_model is None:
+        args.judge_model = "sonnet" if args.backend == "claude-code" else "claude-sonnet-4-6"
+
     data = json.loads(args.results_json.read_text(encoding="utf-8"))
     rubric = args.rubric.read_text(encoding="utf-8")
-    client = anthropic.Anthropic()
+
+    client = None
+    if args.backend == "api":
+        if anthropic is None:
+            sys.exit("Install for --backend api: pip install anthropic")
+        client = anthropic.Anthropic()
 
     scored = []
     for r in data["results"]:
-        score, reason = judge_one(
-            client=client,
-            rubric=rubric,
-            task=r["task"],
-            response=r.get("response", ""),
-            model=args.judge_model,
-        )
+        if args.backend == "claude-code":
+            score, reason = judge_one_via_claude_code(
+                rubric=rubric,
+                task=r["task"],
+                response=r.get("response", ""),
+                model=args.judge_model,
+            )
+        else:
+            score, reason = judge_one_via_api(
+                client=client,
+                rubric=rubric,
+                task=r["task"],
+                response=r.get("response", ""),
+                model=args.judge_model,
+            )
         scored.append(
             {
                 "task_id": r["task_id"],
@@ -128,7 +192,9 @@ def main() -> int:
     summary = {
         "run_id": data.get("run_id"),
         "condition": data.get("condition"),
-        "model": data.get("model"),
+        "eval_backend": data.get("backend"),
+        "eval_model": data.get("model"),
+        "judge_backend": args.backend,
         "judge_model": args.judge_model,
         "task_count": len(scored),
         "scored_count": len(valid_scores),

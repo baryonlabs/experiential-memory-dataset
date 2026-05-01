@@ -65,6 +65,34 @@ This dataset accompanies a controlled experiment comparing four memory condition
 
 5개 핵심 선행 연구의 deep summary와 본 fork와의 관계는 [`docs/related-work-public-KO.md`](docs/related-work-public-KO.md) 참조 (Han et al. 2025 / Edge et al. 2024 / Karpathy 2026 / Xu et al. 2024 / Xiang et al. 2025). 짧은 인용 형식은 [`docs/rag-vs-wiki-design.md`](docs/rag-vs-wiki-design.md#references) 참조.
 
+### 실행 방법 (구독 경로 — API 키 불필요)
+
+평가는 두 가지 백엔드를 지원하며, **기본은 Claude Code 구독**입니다 (Pro/Max). API 키 비용 없이 돌릴 수 있습니다.
+
+```bash
+# 0) 사전 체크: API 키가 환경에 있으면 구독 대신 API가 우선됨 → 풀어두기
+unset ANTHROPIC_API_KEY
+claude auth                       # 로그인 상태 확인 (필요시 로그인)
+
+# 1) 파싱 검증 (비용 0)
+python3 scripts/run_condition_e_via_claude_code.py --dry-run
+
+# 2) 단일 task 파일럿 (1 task만 실행)
+python3 scripts/run_condition_e_via_claude_code.py --task IR-1
+
+# 3) 한 cycle 전체: lint → 20 task 실행 → judge 채점 → loss 출력
+bash autoresearch/run_experiment.sh
+# → mean_score=X.XX  loss=X.XXXX  (loss = 1 - (mean_score - 1) / 4)
+```
+
+API 백엔드(per-token 과금)를 쓰려면:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+pip install anthropic
+AR_BACKEND=api bash autoresearch/run_experiment.sh
+```
+
 ### TODO (다음 단계)
 
 - [x] PoC: 위키 스키마(`wiki/CLAUDE.md`) + 3개 페이지 변환 + cross-reference 삼각형
@@ -75,9 +103,9 @@ This dataset accompanies a controlled experiment comparing four memory condition
 - [x] 평가 자동화 스크립트 (`scripts/run_condition_e.py`) — Anthropic SDK tool-use, sandboxed Read/Glob/Grep
 - [x] LLM-as-judge 채점 스크립트 (`scripts/score_responses.py`) — `evaluation/rubric.md` 기반 1–5 점수
 - [x] [`karpathy/autoresearch`](https://github.com/karpathy/autoresearch) 통합 scaffolding (`autoresearch/program.md`, `autoresearch/run_experiment.sh`) — 변형 가능 타깃·loss·cycle 정의
-- [ ] **첫 실측 실행**: API 키 셋업 후 `bash autoresearch/run_experiment.sh` 로 베이스라인 loss 측정
-- [ ] **자동 최적화 루프 가동**: autoresearch 본체에 본 scaffolding을 연결해 밤새 자율 실험 (위키 구조 → loss 최적화)
-- [ ] Condition F (experiential-wiki, private) — 협력 연구자 환경에서 동일 파이프라인 적용
+- [ ] **첫 실측 실행**: 위 "실행 방법" 절차로 hand-curated wiki의 베이스라인 mean_score / loss 측정 (구독으로 0원 가능)
+- [ ] **자동 최적화 루프 가동**: `karpathy/autoresearch` 본체에 본 scaffolding 연결, 밤새 자율 실험 (위키 구조 → loss 최적화)
+- [ ] **Condition F (private)**: 협력 연구자 환경에서 experiential corpus 위에 동일 파이프라인 적용 (private)
   - **autoresearch란**: 단일 GPU 환경에서 AI 에이전트가 코드를 수정·재학습·검증하며 *밤새 자율적으로 실험*하도록 만든 프레임워크 (MIT). 한 번의 실험 사이클 약 5분, 시간당 ~12회 반복, 메트릭 기반으로 변경을 채택/폐기.
   - **본 연구에 적용 시**: 에이전트가 **위키 구조 자체**(페이지 granularity, 링크 밀도, `index.md` 포맷, ingest 프롬프트, `## Related` 깊이 등)를 변형하면서 taskset 점수를 메트릭으로 *자동 탐색*.
   - **연구 호의 2단계**: ① 사람이 손으로 만든 LLM-Wiki 베이스라인(현재 PoC) → ② autoresearch로 *최적 위키 구조* 자동 발견. 수동 설계의 한계를 넘어, 이 워크로드에서 가장 효과적인 메모리 구조가 무엇인지 *경험적으로* 결정하는 것이 최종 목표.
@@ -124,8 +152,9 @@ This dataset accompanies a controlled experiment comparing four memory condition
 │   └── pages/                      # 20 wiki pages (1:1 with synthetic-memory/)
 ├── scripts/                        # Eval / lint / score automation
 │   ├── lint_fidelity.py            # Wiki vs source fidelity check
-│   ├── run_condition_e.py          # Condition E runner (Anthropic SDK tool-use)
-│   └── score_responses.py          # LLM-as-judge rubric scorer
+│   ├── run_condition_e.py          # Condition E runner — Anthropic SDK (per-token billing)
+│   ├── run_condition_e_via_claude_code.py  # Condition E runner — local `claude` CLI (subscription, no API key)
+│   └── score_responses.py          # LLM-as-judge scorer (--backend claude-code|api)
 ├── autoresearch/                   # karpathy/autoresearch integration
 │   ├── README.md                   # Targets, loss, cycle, guardrails
 │   ├── program.md                  # Agent instructions
