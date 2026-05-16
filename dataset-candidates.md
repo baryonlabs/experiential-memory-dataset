@@ -98,8 +98,11 @@
 - [ ] 각 후보의 정확한 라이선스 확인 (CC-BY-4.0 재배포 호환 여부)
 - [ ] ODCV-Bench와 LongMemEval의 세션 포맷을 공통 스키마로 정규화 가능한가?
 - [ ] 퍼소나 드리프트 메트릭을 한국어 세션(본 실험의 원어)에 적용 시 신뢰도 검증 필요
-- [ ] "선행성" 측정 방법론 — 드리프트 곡선의 변곡점 vs 위반 시점의 lead time 정의
-- [ ] 본 리포의 조건 A(경험적 기억)가 드리프트를 줄이는지/늘리는지 사전 가설 수립
+- [x] "선행성" 측정 방법론 — `evaluation/persona-collapse-protocol.md` §2.3에 lead time 정의
+- [x] 본 리포의 조건 A(경험적 기억)가 드리프트를 줄이는지/늘리는지 사전 가설 수립
+  — `evaluation/persona-collapse-protocol.md` §1(H2) 및 §5 파일럿 재분석 참조
+
+가설 검증 실험 설계는 **`evaluation/persona-collapse-protocol.md`** 로 구체화되었다.
 
 ## 참고 자료
 
