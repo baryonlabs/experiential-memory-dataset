@@ -64,6 +64,21 @@
 |----------|-----------|--------|------|
 | **Persona Jailbreaking** (arXiv 2601.16466) | 퍼소나를 통한 LLM 탈옥 사례 | 중간 | 붕괴를 "유도"하는 통제 변인 — 자연 드리프트와 대비군으로 활용 |
 
+### E. 사회공학적 alignment 붕괴 / 인지 상태 (AIM Intelligence)
+
+AIM Intelligence는 "언어 안전"에서 **인지 상태 변화(cognitive state shift)** 감시로,
+**Static Alignment → Dynamic Control** 로 이동하는 연구 흐름을 보인다. 이슈 #1의
+"퍼소나 드리프트 → 실행 위험" 가설과 철학이 거의 동일하다.
+
+| 데이터셋 | 규모/특징 | 적합성 | 비고 |
+|----------|-----------|--------|------|
+| **MisalignmentBench** (AIM Intelligence) | 역할·권위·도덕 딜레마 등 사회공학적 압력으로 모델이 *스스로* alignment를 깨게 유도하는 재현 가능 멀티턴 시나리오 | 매우 높음 | prompt injection이 아닌 contextual manipulation — 정상처럼 보이는 맥락 속 alignment drift. 상태 그래프의 S2(압력 수용) 엣지 트리거 |
+| **Tool-Mediated Belief Injection** (AIM Intelligence) | 거짓 tool output("관리자 승인 완료")을 진실로 신뢰 → 이후 reasoning 전체 오염 | 높음 | Prompt Injection → Belief Injection 진화. browser·MCP·RAG·API 신뢰가 위협 표면. 상태 그래프 S3 노드 + S3⇄S4 사이클 유도 |
+| **ELITE** (AIM Intelligence) | Vision-Language 안전 벤치 — "안전한가?"(이진)가 아닌 **위험 표면 정량화** | 중간 | 멀티모달은 본 실험 범위 밖이나, 상태 그래프 노드의 위험 가중 `w(s)` 설계 사상을 차용 |
+
+이 그룹의 상세 활용은 `evaluation/persona-collapse-protocol.md` §6(상태 그래프 기반
+조기 감지) 참조.
+
 ## 4. 본 리포지토리 데이터셋과의 연결
 
 현재 리포의 4개 조건(A 경험적 / B 합성 / C 하이브리드 / D 베이스라인) 실험은
@@ -87,6 +102,7 @@
 
 - **드리프트 기준선**: `persona_drift` 메트릭 + 본 리포 Soul Spec
 - **위반 시나리오**: ODCV-Bench (Incentivized 변형) — "제약 이탈"의 명확한 그라운드 트루스
+- **압력 인젝트**: MisalignmentBench — 사회공학적 맥락 압력으로 alignment drift 유도
 - **장기 세션 백본**: LongMemEval — 50+ 세션에 걸친 누적 드리프트 관측
 - **대비군**: Persona Jailbreaking — 유도된 붕괴 vs 자연 드리프트 구분
 
@@ -117,3 +133,5 @@
 - [MemoryAgentBench: Evaluating Memory in LLM Agents via Incremental Multi-Turn Interactions (GitHub, ICLR 2026)](https://github.com/HUST-AI-HYZ/MemoryAgentBench)
 - [Persona Jailbreaking in Large Language Models (arXiv 2601.16466)](https://www.arxiv.org/pdf/2601.16466)
 - [Prioritizing Real-Time Failure Detection in AI Agents (Partnership on AI)](https://partnershiponai.org/wp-content/uploads/2025/09/agents-real-time-failure-detection.pdf)
+- [MisalignmentBench (AIM Intelligence)](https://www.aim-intelligence.com/blog/misalignment-bench)
+- [AIM Intelligence — Enterprise AI Security Platform](https://aim-intelligence.com/)
