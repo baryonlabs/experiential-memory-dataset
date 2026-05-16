@@ -4,7 +4,7 @@
 > Instrument for AI Agent Constraint Violations**
 
 > 관련 이슈: [#1](https://github.com/baryonlabs/experiential-memory-dataset/issues/1) ·
-> 선행 문서: `dataset-candidates.md`, `evaluation/persona-collapse-protocol.md`
+> 선행 문서: `dataset-candidates.md`, `persona-collapse-protocol.md`
 
 ## 0. 한 문단 요약
 
@@ -89,7 +89,7 @@
 ## 5. 탐지 장치
 
 측정 도구·세션 설계·상태 그래프·사이클 탐지는 이미
-`evaluation/persona-collapse-protocol.md` 에 정의되어 있다. 본 연구는 그 위에
+`persona-collapse-protocol.md` 에 정의되어 있다. 본 연구는 그 위에
 **카나리아 행동 층**을 추가한다.
 
 세 층의 신호를 동일 타임라인에 정렬한다 (이른 것부터):
@@ -143,4 +143,4 @@
 ## 참고
 
 데이터셋·메트릭 출처는 `dataset-candidates.md` §참고 자료,
-탐지 방법론은 `evaluation/persona-collapse-protocol.md` 참조.
+탐지 방법론은 `persona-collapse-protocol.md` 참조.

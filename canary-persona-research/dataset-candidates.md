@@ -76,7 +76,7 @@ AIM Intelligence는 "언어 안전"에서 **인지 상태 변화(cognitive state
 | **Tool-Mediated Belief Injection** (AIM Intelligence) | 거짓 tool output("관리자 승인 완료")을 진실로 신뢰 → 이후 reasoning 전체 오염 | 높음 | Prompt Injection → Belief Injection 진화. browser·MCP·RAG·API 신뢰가 위협 표면. 상태 그래프 S3 노드 + S3⇄S4 사이클 유도 |
 | **ELITE** (AIM Intelligence) | Vision-Language 안전 벤치 — "안전한가?"(이진)가 아닌 **위험 표면 정량화** | 중간 | 멀티모달은 본 실험 범위 밖이나, 상태 그래프 노드의 위험 가중 `w(s)` 설계 사상을 차용 |
 
-이 그룹의 상세 활용은 `evaluation/persona-collapse-protocol.md` §6(상태 그래프 기반
+이 그룹의 상세 활용은 `persona-collapse-protocol.md` §6(상태 그래프 기반
 조기 감지) 참조.
 
 ## 4. 본 리포지토리 데이터셋과의 연결
@@ -114,11 +114,11 @@ AIM Intelligence는 "언어 안전"에서 **인지 상태 변화(cognitive state
 - [ ] 각 후보의 정확한 라이선스 확인 (CC-BY-4.0 재배포 호환 여부)
 - [ ] ODCV-Bench와 LongMemEval의 세션 포맷을 공통 스키마로 정규화 가능한가?
 - [ ] 퍼소나 드리프트 메트릭을 한국어 세션(본 실험의 원어)에 적용 시 신뢰도 검증 필요
-- [x] "선행성" 측정 방법론 — `evaluation/persona-collapse-protocol.md` §2.3에 lead time 정의
+- [x] "선행성" 측정 방법론 — `persona-collapse-protocol.md` §2.3에 lead time 정의
 - [x] 본 리포의 조건 A(경험적 기억)가 드리프트를 줄이는지/늘리는지 사전 가설 수립
-  — `evaluation/persona-collapse-protocol.md` §1(H2) 및 §5 파일럿 재분석 참조
+  — `persona-collapse-protocol.md` §1(H2) 및 §5 파일럿 재분석 참조
 
-가설 검증 실험 설계는 **`evaluation/persona-collapse-protocol.md`** 로 구체화되었다.
+가설 검증 실험 설계는 **`persona-collapse-protocol.md`** 로 구체화되었다.
 
 ## 참고 자료
 
